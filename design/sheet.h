@@ -1,34 +1,47 @@
 #pragma once
 
+#include <functional>
+#include <vector>
+
 #include "cell.h"
 #include "common.h"
 
-#include <functional>
-
 class Sheet : public SheetInterface {
-public:
-    ~Sheet();
+public:  
+    using Storage = std::vector<std::vector<std::unique_ptr<CellInterface>>>;
 
-    void SetCell(Position pos, std::string text) override;
+    Sheet() = default;
+    ~Sheet() override = default;
 
-    const CellInterface* GetCell(Position pos) const override;
-    CellInterface* GetCell(Position pos) override;
+    void SetCell(Position position, std::string text) override;
 
-    void ClearCell(Position pos) override;
+    const CellInterface* GetCell(Position position) const override;
+    CellInterface* GetCell(Position position) override;
+
+    void ClearCell(Position position) override;
 
     Size GetPrintableSize() const override;
 
     void PrintValues(std::ostream& output) const override;
     void PrintTexts(std::ostream& output) const override;
 
-    const Cell* GetConcreteCell(Position pos) const;
-    Cell* GetConcreteCell(Position pos);
+private:  
+    Storage data_;
 
-private:
-    void MaybeIncreaseSizeToIncludePosition(Position pos);
-    void PrintCells(std::ostream& output,
-                    const std::function<void(const CellInterface&)>& printCell) const;
-    Size GetActualSize() const;
+    void ResizeStorage(Position position);
 
-    std::vector<std::vector<std::unique_ptr<Cell>>> cells_;
+    template <class Getter>
+    void Print(std::ostream& out, const Getter getter) const {
+        auto [rows_count, columns_count] = GetPrintableSize();
+
+        for (int row_id = 0; row_id < rows_count; ++row_id) {
+            for (int col_id = 0; col_id < columns_count; ++col_id) {
+                if (col_id != 0)
+                    out << '\t';
+                if (auto* cell = GetCell({row_id, col_id}))
+                    getter(cell);
+            }
+            out << '\n';
+        }
+    }
 };
