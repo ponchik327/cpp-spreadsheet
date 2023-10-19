@@ -42,13 +42,33 @@ public:
         Div0,  // в результате вычисления возникло деление на ноль
     };
 
-    FormulaError(Category category);
+    FormulaError(Category category)
+        : category_(category) {
+    }
 
-    Category GetCategory() const;
+    Category GetCategory() const {
+        return category_;
+    }
 
-    bool operator==(FormulaError rhs) const;
+    bool operator==(FormulaError rhs) const {
+        return category_ == rhs.category_;
+    }
 
-    std::string_view ToString() const;
+    std::string_view ToString() const {
+        switch (category_) {
+            case Category::Ref : 
+                return "#REF!";
+                
+            case Category::Div0 :
+                return "#DIV/0!";    
+
+            case Category::Value :
+                return "#VALUE!";
+
+            default:
+                return "";
+        }
+    }
 
 private:
     Category category_;
@@ -83,6 +103,8 @@ public:
     using Value = std::variant<std::string, double, FormulaError>;
 
     virtual ~CellInterface() = default;
+
+    virtual void Set(std::string text) = 0;
 
     // Возвращает видимое значение ячейки.
     // В случае текстовой ячейки это её текст (без экранирующих символов). В
